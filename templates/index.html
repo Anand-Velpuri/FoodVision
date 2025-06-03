@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodVision - Food Image Recognition</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    
+</head>
+<body class="bg-gradient-to-br from-orange-100 to-orange-200 min-h-screen">
+    <!-- tsParticles Animated Background -->
+    <div id="tsparticles" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;"></div>
+
+    <div class="container mx-auto px-4 py-8 z-10 relative">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-orange-600 mb-4 animate-fade-in">FoodVision</h1>
+            <p class="text-xl text-gray-700">Upload a food image and let AI identify it!</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-8 relative z-20">
+            <div id="drop-zone" class="border-4 border-dashed border-orange-300 rounded-lg p-8 text-center cursor-pointer transition-all duration-300 hover:border-orange-500 hover:bg-orange-50">
+                <div class="space-y-4">
+                    <svg class="mx-auto h-16 w-16 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <div class="text-gray-600">
+                        <p class="text-lg font-medium">Drag and drop your food image here</p>
+                        <p class="text-sm text-gray-500 mt-2">Supported formats: JPG, JPEG, PNG</p>
+                        <button id="browse-button" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-300">
+                            Browse Files
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/jpg,image/png">
+            </div>
+
+            <!-- Warning Message -->
+            <div id="warning-message" class="mt-4 hidden">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded transform scale-95 opacity-0">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p id="warning-text" class="font-medium"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="preview-container" class="mt-8 hidden">
+                <div class="relative">
+                    <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
+                        <img id="image-preview" class="w-full h-full object-contain" src="" alt="Preview">
+                    </div>
+                    <div id="loading-overlay" class="hidden absolute inset-0 bg-black bg-opacity-50 rounded-lg flex flex-col items-center justify-center">
+                        <div class="w-full max-w-md px-4">
+                            <div class="relative pt-1">
+                                <div class="flex mb-2 items-center justify-between">
+                                    <div>
+                                        <span id="upload-progress-text" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-orange-200 bg-orange-600">
+                                            0%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-orange-200">
+                                    <div id="upload-progress-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="result-container" class="mt-8 hidden">
+                <div class="bg-orange-100 rounded-lg p-6 transform scale-95 opacity-0">
+                    <h3 class="text-xl font-semibold text-orange-800 mb-2">Prediction Result</h3>
+                    <p id="prediction-text" class="text-2xl font-bold text-orange-600"></p>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="history-section" class="mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Prediction History</h3>
+                    <button id="clear-history" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300 relative z-30">
+                        Clear All
+                    </button>
+                </div>
+                <div id="history-list" class="space-y-4">
+                    <!-- History items will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-full opacity-0 transition-all duration-300 z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Confirmation Popup -->
+    <div id="confirmation-popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform scale-95 opacity-0 transition-all duration-300">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirm Action</h3>
+            <p id="confirmation-message" class="text-gray-600 mb-6"></p>
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-confirmation" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300">
+                    Cancel
+                </button>
+                <button id="confirm-action" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- tsParticles library (single bundle) -->
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+    
+    <!-- Footer -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-white bg-opacity-90 shadow-lg py-4 z-30">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col items-center justify-center space-y-2">
+                <p class="text-gray-700">Made by Anand Velpuri</p>
+                <div class="flex space-x-4">
+                    <a href="https://github.com/Anand-Velpuri" target="_blank" class="text-gray-700 hover:text-orange-600 transition-colors duration-300">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                        </svg>
+                    </a>
+                    <a href="https://www.linkedin.com/in/anand-velpuri/" target="_blank" class="text-gray-700 hover:text-orange-600 transition-colors duration-300">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        tsParticles.load("tsparticles", {
+          background: { color: { value: "#fff0" } },
+          fpsLimit: 60,
+          particles: {
+            number: { value: 40, density: { enable: true, area: 800 } },
+            color: { value: ["#f59e42", "#fbbf24", "#f87171", "#f472b6"] },
+            shape: {
+              type: ["char"],
+              character: [
+                { value: "🍕", font: "Arial", style: "", weight: "400" },
+                { value: "🍔", font: "Arial", style: "", weight: "400" },
+                { value: "🍟", font: "Arial", style: "", weight: "400" },
+                { value: "🌭", font: "Arial", style: "", weight: "400" },
+                { value: "🍿", font: "Arial", style: "", weight: "400" },
+                { value: "🍩", font: "Arial", style: "", weight: "400" },
+                { value: "🍣", font: "Arial", style: "", weight: "400" },
+                { value: "🍦", font: "Arial", style: "", weight: "400" },
+                { value: "🍪", font: "Arial", style: "", weight: "400" },
+                { value: "🍗", font: "Arial", style: "", weight: "400" },
+                { value: "🍰", font: "Arial", style: "", weight: "400" },
+                { value: "🍜", font: "Arial", style: "", weight: "400" },
+                { value: "🍧", font: "Arial", style: "", weight: "400" },
+                { value: "🍫", font: "Arial", style: "", weight: "400" },
+                { value: "🍤", font: "Arial", style: "", weight: "400" },
+                { value: "🥨", font: "Arial", style: "", weight: "400" },
+                { value: "🥗", font: "Arial", style: "", weight: "400" },
+                { value: "🥪", font: "Arial", style: "", weight: "400" },
+                { value: "🥞", font: "Arial", style: "", weight: "400" },
+                { value: "🥙", font: "Arial", style: "", weight: "400" }
+              ]
+            },
+            opacity: { value: 0.85, random: true },
+            size: { value: { min: 18, max: 32 }, random: true },
+            move: {
+              enable: true,
+              speed: 1.1,
+              direction: "none",
+              random: true,
+              straight: false,
+              outModes: { default: "out" },
+              attract: { enable: false }
+            },
+            links: {
+              enable: true,
+              distance: 120,
+              color: "#fbbf24",
+              opacity: 0.3,
+              width: 4
+            }
+          },
+          detectRetina: true
+        });
+      });
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

@@ -1,0 +1,205 @@
+/* Custom Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Drag and Drop Styles */
+#drop-zone.dragover {
+  border-color: #f97316;
+  background-color: #fff7ed;
+  transform: scale(1.02);
+}
+
+/* Toast Animation */
+#toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Loading Animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Result Container Animation */
+#result-container.show {
+  animation: slideIn 0.5s ease-out;
+}
+
+/* History Item Animation */
+.history-item {
+  animation: fadeIn 0.5s ease-out;
+  transition: all 0.3s ease-out;
+}
+
+.history-item.removing {
+  transform: translateX(100%);
+  opacity: 0;
+  margin-left: -100%;
+}
+
+/* Progress Bar Styles */
+#upload-progress-bar {
+  transition: width 0.3s ease-out, background-color 0.3s ease-out;
+}
+
+/* Image Preview Styles */
+.aspect-w-16 {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+.aspect-w-16 > * {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+#image-preview {
+  object-fit: contain;
+  background-color: #f3f4f6;
+}
+
+/* Confirmation Popup Animation */
+#confirmation-popup.show {
+  display: flex;
+}
+
+#confirmation-popup.show > div {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #f97316;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ea580c;
+}
+
+/* Aurora Animated Background */
+.aurora-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 20% 40%, #fbbf24 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 60%, #f472b6 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 80%, #f87171 0%, transparent 70%);
+  animation: auroraMove 12s infinite alternate linear;
+}
+@keyframes auroraMove {
+  0% {
+    filter: blur(40px) brightness(1);
+  }
+  100% {
+    filter: blur(60px) brightness(1.1);
+  }
+}
+
+.animated-blobs-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.4;
+  filter: blur(40px);
+  animation: moveBlobs 18s infinite alternate ease-in-out;
+}
+.blob:nth-child(1) {
+  width: 400px;
+  height: 400px;
+  background: #ffb347;
+  left: 10vw;
+  top: 10vh;
+  animation-delay: 0s;
+}
+.blob:nth-child(2) {
+  width: 300px;
+  height: 300px;
+  background: #ffecd2;
+  left: 60vw;
+  top: 20vh;
+  animation-delay: 3s;
+}
+.blob:nth-child(3) {
+  width: 350px;
+  height: 350px;
+  background: #fcb69f;
+  left: 30vw;
+  top: 60vh;
+  animation-delay: 6s;
+}
+@keyframes moveBlobs {
+  0% {
+    transform: scale(1) translateY(0) translateX(0);
+  }
+  100% {
+    transform: scale(1.2) translateY(40px) translateX(60px);
+  }
+}
