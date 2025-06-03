@@ -6,11 +6,20 @@ import base64
 import io
 from PIL import Image
 import gc
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Enable mixed precision for faster inference
+tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
 app = Flask(__name__)
 
 # Constants
 IMG_SIZE = 224
+BATCH_SIZE = 1
 
 # Configure upload folder
 UPLOAD_FOLDER = 'uploads'
@@ -20,8 +29,33 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Create uploads folder if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load the model
-model = tf.keras.models.load_model('model/efficientnetb0_feature_extract_model_mixed_precision_fine_tuned.keras')
+# Load the model with optimizations
+model_path = 'model/efficientnetb0_feature_extract_model_mixed_precision_fine_tuned.keras'
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"Attempting to load model from: {os.path.abspath(model_path)}")
+
+try:
+    # Load model with optimizations
+    model = tf.keras.models.load_model(model_path)
+    
+    # Optimize model for inference
+    model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=['accuracy'],
+        jit_compile=True  # Enable XLA compilation
+    )
+    
+    # Create a prediction function that uses tf.function for faster execution
+    @tf.function
+    def predict_batch(images):
+        return model(images, training=False)
+    
+    logger.info("Model loaded and optimized successfully")
+except Exception as e:
+    logger.error(f"Error loading model: {str(e)}")
+    logger.error(f"Full error details: {repr(e)}")
+    raise
 
 # Food class names (you may need to adjust these based on your model's classes)
 FOOD_CLASSES = ['apple_pie',
@@ -133,10 +167,10 @@ def load_and_prep_image(image, img_shape=224, scale=False):
     """
     Process image to match the notebook's approach
     """
-    # Convert PIL image to tensor
+    # Convert PIL image to tensor and optimize preprocessing
     img = tf.keras.preprocessing.image.img_to_array(image)
-    # Resize the image
     img = tf.image.resize(img, size=[img_shape, img_shape])
+    img = tf.cast(img, tf.float32)  # Ensure correct dtype
     return img
 
 def predict_food(image):
@@ -144,24 +178,27 @@ def predict_food(image):
     Make prediction using the model
     """
     try:
+        logger.info("Starting prediction process")
         # Process image without scaling (as per notebook)
         img = load_and_prep_image(image, scale=False)
+        logger.info("Image preprocessed successfully")
+        
         # Add batch dimension
         img = tf.expand_dims(img, axis=0)
-        # Make prediction
-        pred_prob = model.predict(img, verbose=0)
+        
+        # Make prediction using the optimized function
+        logger.info("Making prediction")
+        pred_prob = predict_batch(img)
+        
         # Get the predicted class and confidence
+        pred_prob = pred_prob.numpy()  # Convert to numpy for faster processing
         pred_class_idx = pred_prob.argmax()
         pred_class = FOOD_CLASSES[pred_class_idx]
         confidence = float(pred_prob.max())
         
-        # Print prediction details for debugging
-        print(f"Prediction: {pred_class}")
-        print(f"Confidence: {confidence:.2f}")
-        print("Top 5 predictions:")
-        top_5_idx = np.argsort(pred_prob[0])[-5:][::-1]
-        for idx in top_5_idx:
-            print(f"{FOOD_CLASSES[idx]}: {pred_prob[0][idx]:.2f}")
+        # Log prediction details
+        logger.info(f"Prediction: {pred_class}")
+        logger.info(f"Confidence: {confidence:.2f}")
         
         # Clear memory
         del img
@@ -169,7 +206,7 @@ def predict_food(image):
         
         return pred_class, confidence
     except Exception as e:
-        print(f"Error during prediction: {str(e)}")
+        logger.error(f"Error during prediction: {str(e)}")
         raise
 
 @app.route('/')
